@@ -34,6 +34,7 @@
 @synthesize notificationCallbackId;
 @synthesize callback;
 
+#define SYSTEM_VERSION_LESS_THAN(v) ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] == NSOrderedAscending)
 
 - (void)unregister:(CDVInvokedUrlCommand*)command;
 {
@@ -49,9 +50,10 @@
 
     NSMutableDictionary* options = [command.arguments objectAtIndex:0];
 
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
+    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
 		UIUserNotificationType UserNotificationTypes = UIUserNotificationTypeNone;
-#endif
+    }
+
     UIRemoteNotificationType notificationTypes = UIRemoteNotificationTypeNone;
 
     id badgeArg = [options objectForKey:@"badge"];
@@ -62,57 +64,66 @@
     {
         if ([badgeArg isEqualToString:@"true"]) {
             notificationTypes |= UIRemoteNotificationTypeBadge;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-            UserNotificationTypes |= UIUserNotificationTypeBadge;
-#endif
+            if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+                    UserNotificationTypes |= UIUserNotificationTypeBadge;
+            }
         }
     }
     else if ([badgeArg boolValue]) {
         notificationTypes |= UIRemoteNotificationTypeBadge;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-        UserNotificationTypes |= UIUserNotificationTypeBadge;
-#endif
+
+        if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+            UserNotificationTypes |= UIUserNotificationTypeBadge;
+        }
+
     }
 
     if ([soundArg isKindOfClass:[NSString class]])
     {
         if ([soundArg isEqualToString:@"true"]) {
             notificationTypes |= UIRemoteNotificationTypeSound;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-            UserNotificationTypes |= UIUserNotificationTypeSound;
-#endif
-    }
+            if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+                UserNotificationTypes |= UIUserNotificationTypeSound;
+            }
+        }
     }
     else if ([soundArg boolValue]) {
         notificationTypes |= UIRemoteNotificationTypeSound;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-        UserNotificationTypes |= UIUserNotificationTypeSound;
-#endif
+
+        if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+            UserNotificationTypes |= UIUserNotificationTypeSound;
+        }
+
     }
 
     if ([alertArg isKindOfClass:[NSString class]])
     {
         if ([alertArg isEqualToString:@"true"]) {
             notificationTypes |= UIRemoteNotificationTypeAlert;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-            UserNotificationTypes |= UIUserNotificationTypeAlert;
-#endif
-    }
+
+            if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+                UserNotificationTypes |= UIUserNotificationTypeAlert;
+            }
+
+        }
     }
     else if ([alertArg boolValue]) {
         notificationTypes |= UIRemoteNotificationTypeAlert;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-        UserNotificationTypes |= UIUserNotificationTypeAlert;
-#endif
+
+        if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+            UserNotificationTypes |= UIUserNotificationTypeAlert;
+        }
+
     }
 
     // Issue missing ios7 badge updates
     // https://github.com/phonegap-build/PushPlugin/issues/365
     // Fixed when newsstand contant
     // notificationTypes |= UIRemoteNotificationTypeNewsstandContentAvailability;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-    UserNotificationTypes |= UIUserNotificationActivationModeBackground;
-#endif
+
+    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+        UserNotificationTypes |= UIUserNotificationActivationModeBackground;
+    }
 
     self.callback = [options objectForKey:@"ecb"];
 
@@ -121,29 +132,37 @@
 
     isInline = NO;
 
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-    if ([[UIApplication sharedApplication]respondsToSelector:@selector(registerUserNotificationSettings:)]) {
-        UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:UserNotificationTypes categories:nil];
-        [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
-        [[UIApplication sharedApplication] registerForRemoteNotifications];
-    } else {
-    		[[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
-    }
-#else
-		[[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
-#endif
+
+    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+        if ([[UIApplication sharedApplication]respondsToSelector:@selector(registerUserNotificationSettings:)]) {
+            UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:UserNotificationTypes categories:nil];
+            [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
+            [[UIApplication sharedApplication] registerForRemoteNotifications];
+        } else {
+                [[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
+        }
+    }else{
+        [[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
+    }    
 
 	if (notificationMessage)			// if there is a pending startup notification
 		[self notificationReceived];	// go ahead and process it
 }
 
-/*
+
 - (void)isEnabled:(NSMutableArray *)arguments withDict:(NSMutableDictionary *)options {
-    UIRemoteNotificationType type = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+    UIRemoteNotificationType type;
+
+    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+       type = [[[UIApplication sharedApplication] currentUserNotificationSettings] types];
+    }else{
+       type = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+    }
+
     NSString *jsStatement = [NSString stringWithFormat:@"navigator.PushPlugin.isEnabled = %d;", type != UIRemoteNotificationTypeNone];
     NSLog(@"JSStatement %@",jsStatement);
 }
-*/
+
 
 - (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
 
@@ -159,8 +178,12 @@
         [results setValue:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] forKey:@"appVersion"];
 
         // Check what Notifications the user has turned on.  We registered for all three, but they may have manually disabled some or all of them.
-        NSUInteger rntypes = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
-
+        NSUInteger rntypes;
+        if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+           rntypes = [[[UIApplication sharedApplication] currentUserNotificationSettings] types];
+        }else{
+           rntypes = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+        }
         // Set the defaults to disabled unless we find otherwise...
         NSString *pushBadge = @"disabled";
         NSString *pushAlert = @"disabled";
