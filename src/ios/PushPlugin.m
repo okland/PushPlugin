@@ -50,101 +50,106 @@
 
     NSMutableDictionary* options = [command.arguments objectAtIndex:0];
 
-    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
-		UIUserNotificationType UserNotificationTypes = UIUserNotificationTypeNone;
-    }
-
-    UIRemoteNotificationType notificationTypes = UIRemoteNotificationTypeNone;
-
     id badgeArg = [options objectForKey:@"badge"];
     id soundArg = [options objectForKey:@"sound"];
     id alertArg = [options objectForKey:@"alert"];
 
-    if ([badgeArg isKindOfClass:[NSString class]])
-    {
-        if ([badgeArg isEqualToString:@"true"]) {
-            notificationTypes |= UIRemoteNotificationTypeBadge;
-            if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
-                    UserNotificationTypes |= UIUserNotificationTypeBadge;
+    self.callback = [options objectForKey:@"ecb"];
+
+    if ([UIUserNotificationType class]) {
+
+        UIUserNotificationType UserNotificationTypes = UIUserNotificationTypeNone;
+
+        if ([badgeArg isKindOfClass:[NSString class]])
+        {
+            if ([badgeArg isEqualToString:@"true"]) {
+                UserNotificationTypes |= UIUserNotificationTypeBadge;
             }
         }
-    }
-    else if ([badgeArg boolValue]) {
-        notificationTypes |= UIRemoteNotificationTypeBadge;
-
-        if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+        else if ([badgeArg boolValue]) {
             UserNotificationTypes |= UIUserNotificationTypeBadge;
         }
 
-    }
-
-    if ([soundArg isKindOfClass:[NSString class]])
-    {
-        if ([soundArg isEqualToString:@"true"]) {
-            notificationTypes |= UIRemoteNotificationTypeSound;
-            if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+        if ([soundArg isKindOfClass:[NSString class]])
+        {
+            if ([soundArg isEqualToString:@"true"]) {
                 UserNotificationTypes |= UIUserNotificationTypeSound;
             }
         }
-    }
-    else if ([soundArg boolValue]) {
-        notificationTypes |= UIRemoteNotificationTypeSound;
-
-        if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+        else if ([soundArg boolValue]) {
             UserNotificationTypes |= UIUserNotificationTypeSound;
         }
 
-    }
-
-    if ([alertArg isKindOfClass:[NSString class]])
-    {
-        if ([alertArg isEqualToString:@"true"]) {
-            notificationTypes |= UIRemoteNotificationTypeAlert;
-
-            if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+        if ([alertArg isKindOfClass:[NSString class]])
+        {
+            if ([alertArg isEqualToString:@"true"]) {
                 UserNotificationTypes |= UIUserNotificationTypeAlert;
             }
-
         }
-    }
-    else if ([alertArg boolValue]) {
-        notificationTypes |= UIRemoteNotificationTypeAlert;
-
-        if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
+        else if ([alertArg boolValue]) {
             UserNotificationTypes |= UIUserNotificationTypeAlert;
         }
 
-    }
-
-    // Issue missing ios7 badge updates
-    // https://github.com/phonegap-build/PushPlugin/issues/365
-    // Fixed when newsstand contant
-    // notificationTypes |= UIRemoteNotificationTypeNewsstandContentAvailability;
-
-    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
         UserNotificationTypes |= UIUserNotificationActivationModeBackground;
-    }
 
-    self.callback = [options objectForKey:@"ecb"];
+        isInline = NO;
 
-    if (notificationTypes == UIRemoteNotificationTypeNone)
-        NSLog(@"PushPlugin.register: Push notification type is set to none");
+        UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:UserNotificationTypes categories:nil];
+        [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
 
-    isInline = NO;
+    } else {
+
+        UIRemoteNotificationType notificationTypes = UIRemoteNotificationTypeNone;
 
 
-    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
-        if ([[UIApplication sharedApplication]respondsToSelector:@selector(registerUserNotificationSettings:)]) {
-            UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:UserNotificationTypes categories:nil];
-            [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
-            [[UIApplication sharedApplication] registerForRemoteNotifications];
-        } else {
-                [[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
+        if ([badgeArg isKindOfClass:[NSString class]])
+        {
+            if ([badgeArg isEqualToString:@"true"]) {
+                notificationTypes |= UIRemoteNotificationTypeBadge;
+            }
         }
-    }else{
-        [[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
-    }    
+        else if ([badgeArg boolValue]) {
+            notificationTypes |= UIRemoteNotificationTypeBadge;
+        }
 
+        if ([soundArg isKindOfClass:[NSString class]])
+        {
+            if ([soundArg isEqualToString:@"true"]) {
+                notificationTypes |= UIRemoteNotificationTypeSound;
+            }
+        }
+        else if ([soundArg boolValue]) {
+            notificationTypes |= UIRemoteNotificationTypeSound;
+        }
+
+
+        if ([alertArg isKindOfClass:[NSString class]])
+        {
+            if ([alertArg isEqualToString:@"true"]) {
+                notificationTypes |= UIRemoteNotificationTypeAlert;
+            }
+        }
+        else if ([alertArg boolValue]) {
+            notificationTypes |= UIRemoteNotificationTypeAlert;
+        }
+
+
+        // Issue missing ios7 badge updates
+        // https://github.com/phonegap-build/PushPlugin/issues/365
+        // Fixed when newsstand contant
+        // notificationTypes |= UIRemoteNotificationTypeNewsstandContentAvailability;
+
+        if (notificationTypes == UIRemoteNotificationTypeNone)
+            NSLog(@"PushPlugin.register: Push notification type is set to none");
+
+        isInline = NO;
+
+        [[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
+
+    } // EO <ios8
+
+  
 	if (notificationMessage)			// if there is a pending startup notification
 		[self notificationReceived];	// go ahead and process it
 }
