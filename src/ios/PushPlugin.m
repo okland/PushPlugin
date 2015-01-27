@@ -56,7 +56,7 @@
 
     self.callback = [options objectForKey:@"ecb"];
 
-    if ([UIUserNotificationType class]) {
+    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
 
         UIUserNotificationType UserNotificationTypes = UIUserNotificationTypeNone;
 
@@ -157,7 +157,7 @@
 
 - (void)isEnabled:(NSMutableArray *)arguments withDict:(NSMutableDictionary *)options {
 
-    if ([UIUserNotificationType class]) {
+    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
 
         UIUserNotificationType type = [[[UIApplication sharedApplication] currentUserNotificationSettings] types];
 
@@ -194,7 +194,7 @@
 
 
         // Check what Notifications the user has turned on.  We registered for all three, but they may have manually disabled some or all of them.
-        if ([UIUserNotificationType class]) {
+        if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
             NSUInteger rntypes = [[[UIApplication sharedApplication] currentUserNotificationSettings] types];
             
             // Check what Registered Types are turned on. This is a bit tricky since if two are enabled, and one is off, it will return a number 2... not telling you which
