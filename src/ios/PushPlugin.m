@@ -156,16 +156,21 @@
 
 
 - (void)isEnabled:(NSMutableArray *)arguments withDict:(NSMutableDictionary *)options {
-    UIRemoteNotificationType type;
 
-    if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
-       type = [[[UIApplication sharedApplication] currentUserNotificationSettings] types];
-    }else{
-       type = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+    if ([UIUserNotificationType class]) {
+
+        UIUserNotificationType type = [[[UIApplication sharedApplication] currentUserNotificationSettings] types];
+
+        NSString *jsStatement = [NSString stringWithFormat:@"navigator.PushPlugin.isEnabled = %d;", type != UIUserNotificationTypeNone];
+        NSLog(@"JSStatement %@",jsStatement);
+    } else {
+
+        UIRemoteNotificationType type = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+
+        NSString *jsStatement = [NSString stringWithFormat:@"navigator.PushPlugin.isEnabled = %d;", type != UIRemoteNotificationTypeNone];
+        NSLog(@"JSStatement %@",jsStatement);
+
     }
-
-    NSString *jsStatement = [NSString stringWithFormat:@"navigator.PushPlugin.isEnabled = %d;", type != UIRemoteNotificationTypeNone];
-    NSLog(@"JSStatement %@",jsStatement);
 }
 
 
@@ -182,31 +187,48 @@
         [results setValue:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleDisplayName"] forKey:@"appName"];
         [results setValue:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] forKey:@"appVersion"];
 
-        // Check what Notifications the user has turned on.  We registered for all three, but they may have manually disabled some or all of them.
-        NSUInteger rntypes;
-        if (!SYSTEM_VERSION_LESS_THAN(@"8.0")) {
-           rntypes = [[[UIApplication sharedApplication] currentUserNotificationSettings] types];
-        }else{
-           rntypes = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
-        }
         // Set the defaults to disabled unless we find otherwise...
         NSString *pushBadge = @"disabled";
         NSString *pushAlert = @"disabled";
         NSString *pushSound = @"disabled";
 
-        // Check what Registered Types are turned on. This is a bit tricky since if two are enabled, and one is off, it will return a number 2... not telling you which
-        // one is actually disabled. So we are literally checking to see if rnTypes matches what is turned on, instead of by number. The "tricky" part is that the
-        // single notification types will only match if they are the ONLY one enabled.  Likewise, when we are checking for a pair of notifications, it will only be
-        // true if those two notifications are on.  This is why the code is written this way
-        if(rntypes & UIRemoteNotificationTypeBadge){
-            pushBadge = @"enabled";
+
+        // Check what Notifications the user has turned on.  We registered for all three, but they may have manually disabled some or all of them.
+        if ([UIUserNotificationType class]) {
+            NSUInteger rntypes = [[[UIApplication sharedApplication] currentUserNotificationSettings] types];
+            
+            // Check what Registered Types are turned on. This is a bit tricky since if two are enabled, and one is off, it will return a number 2... not telling you which
+            // one is actually disabled. So we are literally checking to see if rnTypes matches what is turned on, instead of by number. The "tricky" part is that the
+            // single notification types will only match if they are the ONLY one enabled.  Likewise, when we are checking for a pair of notifications, it will only be
+            // true if those two notifications are on.  This is why the code is written this way
+            if(rntypes & UIUserNotificationTypeBadge){
+                pushBadge = @"enabled";
+            }
+            if(rntypes & UIUserNotificationTypeAlert) {
+                pushAlert = @"enabled";
+            }
+            if(rntypes & UIUserNotificationTypeSound) {
+                pushSound = @"enabled";
+            }
+
+        } else {
+            NSUInteger rntypes = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+
+            // Check what Registered Types are turned on. This is a bit tricky since if two are enabled, and one is off, it will return a number 2... not telling you which
+            // one is actually disabled. So we are literally checking to see if rnTypes matches what is turned on, instead of by number. The "tricky" part is that the
+            // single notification types will only match if they are the ONLY one enabled.  Likewise, when we are checking for a pair of notifications, it will only be
+            // true if those two notifications are on.  This is why the code is written this way
+            if(rntypes & UIRemoteNotificationTypeBadge){
+                pushBadge = @"enabled";
+            }
+            if(rntypes & UIRemoteNotificationTypeAlert) {
+                pushAlert = @"enabled";
+            }
+            if(rntypes & UIRemoteNotificationTypeSound) {
+                pushSound = @"enabled";
+            }
         }
-        if(rntypes & UIRemoteNotificationTypeAlert) {
-            pushAlert = @"enabled";
-        }
-        if(rntypes & UIRemoteNotificationTypeSound) {
-            pushSound = @"enabled";
-        }
+
 
         [results setValue:pushBadge forKey:@"pushBadge"];
         [results setValue:pushAlert forKey:@"pushAlert"];
