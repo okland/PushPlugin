@@ -53,6 +53,7 @@
     id badgeArg = [options objectForKey:@"badge"];
     id soundArg = [options objectForKey:@"sound"];
     id alertArg = [options objectForKey:@"alert"];
+    id silentArg = [options objectForKey:@"silent"]
 
     self.callback = [options objectForKey:@"ecb"];
 
@@ -134,6 +135,16 @@
             notificationTypes |= UIRemoteNotificationTypeAlert;
         }
 
+
+        if ([silentArg isKindOfClass:[NSString class]])
+        {
+            if ([silentArg isEqualToString:@"true"]) {
+                notificationTypes |= UIRemoteNotificationTypeNewsstandContentAvailability;
+            }
+        }
+        else if ([silentArg boolValue]) {
+            notificationTypes |= UIRemoteNotificationTypeNewsstandContentAvailability;
+        }
 
         // Issue missing ios7 badge updates
         // https://github.com/phonegap-build/PushPlugin/issues/365
