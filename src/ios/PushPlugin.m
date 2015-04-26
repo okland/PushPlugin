@@ -53,7 +53,7 @@
     id badgeArg = [options objectForKey:@"badge"];
     id soundArg = [options objectForKey:@"sound"];
     id alertArg = [options objectForKey:@"alert"];
-    id silentArg = [options objectForKey:@"silent"]
+    id silentArg = [options objectForKey:@"silent"];
 
     self.callback = [options objectForKey:@"ecb"];
 
